@@ -28,7 +28,7 @@ No new project setup required. All infrastructure is in place from Scenarios 1�
 
 **⚠️ CRITICAL**: All story phases depend on T001 completing first.
 
-- [ ] T001 Add `"finished"` to the `RoomStatus` union (`"lobby" | "playing" | "finished"`) and add `winnerId?: string` to both the `Room` interface and the `RoomSnapshot` interface in `backend/src/models/game.ts`
+- [x] T001 Add `"finished"` to the `RoomStatus` union (`"lobby" | "playing" | "finished"`) and add `winnerId?: string` to both the `Room` interface and the `RoomSnapshot` interface in `backend/src/models/game.ts`
 
 **Checkpoint**: Type foundation ready. Run `npm run build` in `backend/` to confirm zero errors before proceeding.
 
@@ -42,15 +42,15 @@ No new project setup required. All infrastructure is in place from Scenarios 1�
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Extend `submitGuess()` in `backend/src/services/roomStore.ts`: add a guard `if (room.status === "finished") return { error: "already_finished" }` immediately before the existing `not_playing` guard; in the correct-guess path (after setting `room.scores[participantId] = 100`), also set `room.status = "finished"` and `room.winnerId = participantId` before calling `saveRoom()` — depends on T001
+- [x] T002 [US1] Extend `submitGuess()` in `backend/src/services/roomStore.ts`: add a guard `if (room.status === "finished") return { error: "already_finished" }` immediately before the existing `not_playing` guard; in the correct-guess path (after setting `room.scores[participantId] = 100`), also set `room.status = "finished"` and `room.winnerId = participantId` before calling `saveRoom()` — depends on T001
 
-- [ ] T003 [US1] Update `toRoomSnapshot()` in `backend/src/services/roomStore.ts` to include `winnerId: room.winnerId` in the returned snapshot object — depends on T001
+- [x] T003 [US1] Update `toRoomSnapshot()` in `backend/src/services/roomStore.ts` to include `winnerId: room.winnerId` in the returned snapshot object — depends on T001
 
-- [ ] T004 [US1] Add handling for the `already_finished` error in the `POST /:code/guess` route handler in `backend/src/api/rooms.ts`: map `already_finished` to `HttpError(409, "Game has already finished")` — depends on T002
+- [x] T004 [US1] Add handling for the `already_finished` error in the `POST /:code/guess` route handler in `backend/src/api/rooms.ts`: map `already_finished` to `HttpError(409, "Game has already finished")` — depends on T002
 
-- [ ] T005 [P] [US1] Extend `RoomSnapshot` in `frontend/src/services/api.ts`: change `status` type to `"lobby" | "playing" | "finished"` and add `winnerId?: string` field — depends on T001 (backend type must be stable first, but this is a separate file)
+- [x] T005 [P] [US1] Extend `RoomSnapshot` in `frontend/src/services/api.ts`: change `status` type to `"lobby" | "playing" | "finished"` and add `winnerId?: string` field — depends on T001 (backend type must be stable first, but this is a separate file)
 
-- [ ] T006 [US1] Update `frontend/src/pages/GamePage.tsx` to render the results view when `room.status === "finished"`: replace the entire game layout with a results panel that shows — winner name (`room.participants.find(p => p.id === room.winnerId)?.name ?? "Unknown"`), the secret word (taken from the last `isCorrect === true` guess in `room.guesses`, i.e. `room.guesses.findLast(g => g.isCorrect)?.text ?? ""`), and the `<Scoreboard>` component with final scores; also add a `useEffect` that navigates to `/lobby` when `room.status === "lobby"` (for post-restart detection); host sees a placeholder "Play Again" button (wired in US2), non-host sees "Waiting for the host to start a new game..." — depends on T005
+- [x] T006 [US1] Update `frontend/src/pages/GamePage.tsx` to render the results view when `room.status === "finished"`: replace the entire game layout with a results panel that shows — winner name (`room.participants.find(p => p.id === room.winnerId)?.name ?? "Unknown"`), the secret word (taken from the last `isCorrect === true` guess in `room.guesses`, i.e. `room.guesses.findLast(g => g.isCorrect)?.text ?? ""`), and the `<Scoreboard>` component with final scores; also add a `useEffect` that navigates to `/lobby` when `room.status === "lobby"` (for post-restart detection); host sees a placeholder "Play Again" button (wired in US2), non-host sees "Waiting for the host to start a new game..." — depends on T005
 
 **Checkpoint**: US1 fully functional. Two-tab correct-guess → results transition must pass before Phase 4.
 
@@ -64,15 +64,15 @@ No new project setup required. All infrastructure is in place from Scenarios 1�
 
 ### Implementation for User Story 2
 
-- [ ] T007 [US2] Add `restartGame(code: string): { error: "not_found" } | { ok: true }` exported function to `backend/src/services/roomStore.ts`: get room (return `not_found` if absent); if `room.status === "lobby"` return `{ ok: true }` (idempotent); otherwise reset: `room.status = "lobby"`, `room.strokes = []`, `room.guesses = []`, `room.scores = {}`, `room.currentWord = undefined`, `room.drawerId = undefined`, `room.winnerId = undefined`; call `saveRoom(room)`; return `{ ok: true }` — depends on T001
+- [x] T007 [US2] Add `restartGame(code: string): { error: "not_found" } | { ok: true }` exported function to `backend/src/services/roomStore.ts`: get room (return `not_found` if absent); if `room.status === "lobby"` return `{ ok: true }` (idempotent); otherwise reset: `room.status = "lobby"`, `room.strokes = []`, `room.guesses = []`, `room.scores = {}`, `room.currentWord = undefined`, `room.drawerId = undefined`, `room.winnerId = undefined`; call `saveRoom(room)`; return `{ ok: true }` — depends on T001
 
-- [ ] T008 [US2] Add `router.post("/:code/restart", ...)` route handler to `backend/src/api/rooms.ts`: import `restartGame` from roomStore, parse params with `roomCodeParamsSchema`, call `restartGame(code.toUpperCase())`, respond 404 on `not_found`, 200 with `{ ok: true }` on success — depends on T007
+- [x] T008 [US2] Add `router.post("/:code/restart", ...)` route handler to `backend/src/api/rooms.ts`: import `restartGame` from roomStore, parse params with `roomCodeParamsSchema`, call `restartGame(code.toUpperCase())`, respond 404 on `not_found`, 200 with `{ ok: true }` on success — depends on T007
 
-- [ ] T009 [P] [US2] Add `restartGame(code: string)` API function to `frontend/src/services/api.ts` calling `POST /rooms/${encodeURIComponent(code)}/restart` with empty body, returning `{ ok: boolean }` — depends on T005
+- [x] T009 [P] [US2] Add `restartGame(code: string)` API function to `frontend/src/services/api.ts` calling `POST /rooms/${encodeURIComponent(code)}/restart` with empty body, returning `{ ok: boolean }` — depends on T005
 
-- [ ] T010 [US2] Add `restartGame()` action method to the `RoomStore` class in `frontend/src/state/roomStore.ts` that calls `api.restartGame(this.state.room!.code)` — depends on T009
+- [x] T010 [US2] Add `restartGame()` action method to the `RoomStore` class in `frontend/src/state/roomStore.ts` that calls `api.restartGame(this.state.room!.code)` — depends on T009
 
-- [ ] T011 [US2] Wire the "Play Again" button in `frontend/src/pages/GamePage.tsx`: replace the placeholder "Play Again" button with an async handler that calls `roomStore.restartGame()` on click (no explicit navigation needed — the existing `useEffect` from T006 that watches `room.status === "lobby"` will navigate to `/lobby` automatically when polling detects the reset) — depends on T010
+- [x] T011 [US2] Wire the "Play Again" button in `frontend/src/pages/GamePage.tsx`: replace the placeholder "Play Again" button with an async handler that calls `roomStore.restartGame()` on click (no explicit navigation needed — the existing `useEffect` from T006 that watches `room.status === "lobby"` will navigate to `/lobby` automatically when polling detects the reset) — depends on T010
 
 **Checkpoint**: US2 fully functional. Play Again → lobby navigation must work on both tabs within ~2s.
 
@@ -80,9 +80,9 @@ No new project setup required. All infrastructure is in place from Scenarios 1�
 
 ## Phase 5: Polish & Cross-Cutting Concerns
 
-- [ ] T012 [P] Run `npm run build` in `backend/` and confirm zero TypeScript errors — fix any type errors from `RoomStatus` extension and `winnerId` field additions
-- [ ] T013 [P] Run `npm run build` in `frontend/` and confirm zero TypeScript errors — fix any type errors from updated `RoomStatus` and `winnerId` in `RoomSnapshot`
-- [ ] T014 Full two-tab integration validation: start game → submit correct word → both tabs show results (winner name, word, scoreboard) → host clicks Play Again → both tabs return to lobby → start another game to confirm the full loop works — depends on T012, T013
+- [x] T012 [P] Run `npm run build` in `backend/` and confirm zero TypeScript errors — fix any type errors from `RoomStatus` extension and `winnerId` field additions
+- [x] T013 [P] Run `npm run build` in `frontend/` and confirm zero TypeScript errors — fix any type errors from updated `RoomStatus` and `winnerId` in `RoomSnapshot`
+- [x] T014 Full two-tab integration validation: start game → submit correct word → both tabs show results (winner name, word, scoreboard) → host clicks Play Again → both tabs return to lobby → start another game to confirm the full loop works — depends on T012, T013
 
 ---
 

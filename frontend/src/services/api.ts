@@ -22,10 +22,11 @@ export interface GuessSnapshot {
 
 export interface RoomSnapshot {
   code: string;
-  status: "lobby" | "playing";
+  status: "lobby" | "playing" | "finished";
   participants: Participant[];
   hostId: string;
   drawerId?: string;
+  winnerId?: string;
   word?: string;
   strokes: Point[][];
   guesses: GuessSnapshot[];
@@ -98,6 +99,11 @@ export const api = {
     return request<{ guess: GuessSnapshot; score: number }>(`/rooms/${encodeURIComponent(code)}/guess`, {
       method: "POST",
       body: JSON.stringify({ participantId, text })
+    });
+  },
+  restartGame(code: string) {
+    return request<{ ok: boolean }>(`/rooms/${encodeURIComponent(code)}/restart`, {
+      method: "POST"
     });
   }
 };

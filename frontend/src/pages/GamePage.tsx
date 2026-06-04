@@ -27,12 +27,69 @@ export function GamePage() {
     return () => clearInterval(interval);
   }, [room?.code, roomStore]);
 
+  useEffect(() => {
+    if (room?.status === "lobby") {
+      navigate("/lobby");
+    }
+  }, [room?.status, navigate]);
+
   if (!room) {
     return null;
   }
 
   const isDrawer = room.drawerId === participantId;
+  const isHost = room.hostId === participantId;
   const viewer = room.participants.find((participant) => participant.id === participantId) ?? null;
+
+  if (room.status === "finished") {
+    const winner = room.participants.find((p) => p.id === room.winnerId);
+    const winningGuess = [...(room.guesses ?? [])].reverse().find((g) => g.isCorrect);
+    const secretWord = winningGuess?.text ?? "";
+
+    return (
+      <section className="panel game-page">
+        <div className="game-page__header">
+          <div className="game-page__header-left">
+            <span className="section-kicker">Game Over</span>
+            <h1 className="game-page__title">Results</h1>
+          </div>
+          <RoomCodeBadge code={room.code} />
+        </div>
+
+        <div className="summary-grid">
+          <Card title="Winner">
+            <dl className="detail-list">
+              <div>
+                <dt>Player</dt>
+                <dd style={{ fontSize: "1.25rem", fontWeight: 700 }}>{winner?.name ?? "Unknown"}</dd>
+              </div>
+              <div>
+                <dt>Secret Word</dt>
+                <dd style={{ fontSize: "1.25rem", fontWeight: 700 }}>{secretWord}</dd>
+              </div>
+            </dl>
+          </Card>
+
+          <Scoreboard participants={room.participants} scores={room.scores ?? {}} />
+        </div>
+
+        <div className="button-row">
+          {isHost ? (
+            <button
+              className="button button--primary"
+              onClick={async () => {
+                try { await roomStore.restartGame(); } catch {}
+              }}
+            >
+              Play Again
+            </button>
+          ) : (
+            <p style={{ color: "#6b7280" }}>Waiting for the host to start a new game...</p>
+          )}
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="panel game-page">

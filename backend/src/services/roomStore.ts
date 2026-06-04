@@ -147,9 +147,10 @@ export function submitGuess(
   code: string,
   participantId: string,
   text: string
-): { error: "not_found" | "not_playing" } | { guess: Guess; score: number } {
+): { error: "not_found" | "not_playing" | "already_finished" } | { guess: Guess; score: number } {
   const room = rooms.get(code);
   if (!room) return { error: "not_found" };
+  if (room.status === "finished") return { error: "already_finished" };
   if (room.status !== "playing") return { error: "not_playing" };
 
   const participant = room.participants.find((p) => p.id === participantId);
@@ -161,6 +162,8 @@ export function submitGuess(
 
   if (isCorrect) {
     room.scores[participantId] = 100;
+    room.status = "finished";
+    room.winnerId = participantId;
   }
 
   const guess: Guess = {
@@ -178,6 +181,23 @@ export function submitGuess(
   return { guess, score: room.scores[participantId] ?? 0 };
 }
 
+export function restartGame(code: string): { error: "not_found" } | { ok: true } {
+  const room = rooms.get(code);
+  if (!room) return { error: "not_found" };
+  if (room.status === "lobby") return { ok: true };
+
+  room.status = "lobby";
+  room.strokes = [];
+  room.guesses = [];
+  room.scores = {};
+  room.currentWord = undefined;
+  room.drawerId = undefined;
+  room.winnerId = undefined;
+  saveRoom(room);
+
+  return { ok: true };
+}
+
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
   const snapshot: RoomSnapshot = {
     code: room.code,
@@ -185,6 +205,7 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
     participants: room.participants.map((participant) => ({ ...participant })),
     hostId: room.hostId,
     drawerId: room.drawerId,
+    winnerId: room.winnerId,
     strokes: room.strokes.map((stroke) => [...stroke]),
     guesses: room.guesses.map((guess) => ({ ...guess })),
     scores: { ...room.scores },

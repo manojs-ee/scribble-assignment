@@ -111,6 +111,11 @@ class RoomStore {
     return api.submitGuess(this.state.room.code, this.state.participantId, text);
   }
 
+  async restartGame() {
+    if (!this.state.room) return null;
+    return api.restartGame(this.state.room.code);
+  }
+
   async fetchRoom() {
     if (!this.state.room) {
       return null;

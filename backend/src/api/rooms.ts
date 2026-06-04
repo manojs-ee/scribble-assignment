@@ -8,7 +8,7 @@ import {
   roomViewerQuerySchema,
   strokeSchema
 } from "./schemas.js";
-import { addStroke, clearCanvas, createRoom, getRoom, joinRoom, startGame, submitGuess, toRoomSnapshot } from "../services/roomStore.js";
+import { addStroke, clearCanvas, createRoom, getRoom, joinRoom, restartGame, startGame, submitGuess, toRoomSnapshot } from "../services/roomStore.js";
 
 export function createRoomsRouter() {
   const router = Router();
@@ -87,10 +87,26 @@ export function createRoomsRouter() {
 
       if ("error" in result) {
         if (result.error === "not_found") throw new HttpError(404, "Room or participant not found");
+        if (result.error === "already_finished") throw new HttpError(409, "Game has already finished");
         throw new HttpError(409, "Game is not in progress");
       }
 
       response.json({ guess: result.guess, score: result.score });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/restart", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const result = restartGame(code.toUpperCase());
+
+      if ("error" in result) {
+        throw new HttpError(404, "Room not found — check your code and try again");
+      }
+
+      response.json({ ok: true });
     } catch (error) {
       next(error);
     }
