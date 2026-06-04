@@ -71,14 +71,14 @@ The Start Game button is visible only to the host. It is disabled until at least
 1. **Given** the current player is the host, **When** there is only 1 participant, **Then** the Start Game button is visible but disabled.
 2. **Given** the current player is the host, **When** there are 2 or more participants, **Then** the Start Game button is visible and enabled.
 3. **Given** the current player is not the host, **When** they are on the lobby screen, **Then** no Start Game button is visible.
-4. **Given** the host clicks Start Game with ≥2 players, **When** the action is triggered, **Then** the game start flow is initiated (Scenario 2 scope — this spec only gates the button).
+4. **Given** the host clicks Start Game with ≥2 players, **When** the action is triggered, **Then** the player is navigated to `/game` (placeholder navigation — Scenario 2 replaces this with a real start endpoint).
 
 ---
 
 ### Edge Cases
 
 - What happens when a player joins a room whose code has correct format but does not exist? → Clear "Room not found" error, not a generic 404.
-- What happens if polling fails on every attempt? → Each failed poll logs silently; the next interval retries. The lobby does not crash or freeze.
+- What happens if polling fails on every attempt? → The lobby keeps the last known state and shows nothing to the user. Each failed poll is ignored silently; the next interval retries. The lobby does not crash or freeze.
 - What happens if the host refreshes the page? → Host identity is re-derived from the participant ID issued at room creation, matched against the host recorded in the room snapshot.
 - What happens with two rooms that happen to share participant names? → Rooms are isolated by code; participant identity is by `id` (UUID), not name.
 
@@ -121,3 +121,10 @@ The Start Game button is visible only to the host. It is disabled until at least
 - The `participantId` returned at create/join time is stored in frontend state and used to determine if the current viewer is the host.
 - Room codes are case-insensitive on input but stored in uppercase — the starter already handles this.
 - The manual "Refresh Room" button in the starter lobby will be replaced by automatic polling; the button itself can be removed.
+
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: When a poll fails, what should the lobby UI show? → A: Keep last known state, show nothing — silently retry on next interval.
+- Q: In Scenario 1, when the host clicks Start Game, what should happen? → A: Navigate to `/game` (placeholder) — Scenario 2 wires the real start call.
