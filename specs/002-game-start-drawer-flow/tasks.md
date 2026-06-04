@@ -42,7 +42,7 @@ No new project setup is required. The backend and frontend dev servers, TypeScri
 
 ### Implementation for User Story 1
 
-- [ ] T002 [US1] Add module-level `let roomCreationCount = 0` counter, increment it in `createRoom()` and set `room.wordIndex = roomCreationCount % STARTER_WORDS.length` on the new room, and update `toRoomSnapshot()` to include `drawerId: room.drawerId` and conditionally include `word: room.currentWord` only when `viewerParticipantId === room.drawerId` in `backend/src/services/roomStore.ts`
+- [ ] T002 [US1] Add module-level `let roomCreationCount = 0` counter, increment it in `createRoom()` and set `room.wordIndex = roomCreationCount % STARTER_WORDS.length` on the new room, and update `toRoomSnapshot()` to include `drawerId: room.drawerId` and conditionally include `word: room.currentWord` only when `viewerParticipantId === room.drawerId` — use `word: undefined` or omit the key entirely when the viewer is not the drawer; never set `word: null` (optional fields must be absent from JSON, not null) — in `backend/src/services/roomStore.ts`
 
 - [ ] T003 [US1] Add exported `startGame(code: string)` function to `backend/src/services/roomStore.ts` that: gets the room (returns `{ error: "not_found" }` if absent), returns `{ error: "already_playing" }` if `room.status === "playing"`, otherwise sets `room.status = "playing"`, `room.drawerId = room.hostId`, `room.currentWord = STARTER_WORDS[room.wordIndex]`, calls `saveRoom(room)`, and returns the cloned room — depends on T002
 
@@ -52,7 +52,7 @@ No new project setup is required. The backend and frontend dev servers, TypeScri
 
 - [ ] T006 [US1] Add `startRoom()` action method to the `RoomStore` class in `frontend/src/state/roomStore.ts` that calls `api.startRoom(this.state.room!.code)` inside `withLoading()` and calls `setRoomSession(response)` on success — depends on T005
 
-- [ ] T007 [US1] Replace the LobbyPage Start Game button `onClick` handler: change from `() => navigate("/game")` to an async handler that calls `roomStore.startRoom()` and navigates to `/game` on success, and sets a local `error` state string on failure, rendering the error below the button in `frontend/src/pages/LobbyPage.tsx` — depends on T006
+- [ ] T007 [US1] Replace the LobbyPage Start Game button `onClick` handler: change from `() => navigate("/game")` to an async handler that calls `roomStore.startRoom()` and navigates to `/game` on success, and sets a local `error` state string on failure (including 409 "already playing" — the generic error handler covers this case), rendering the error below the button in `frontend/src/pages/LobbyPage.tsx`; the existing `setInterval` polling `useEffect` requires no change — React's unmount cleanup stops it naturally on navigation — depends on T006
 
 - [ ] T008 [US1] Implement GamePage polling and role UI in `frontend/src/pages/GamePage.tsx`: add a `useEffect` with `setInterval` (~2000ms) calling `roomStore.fetchRoom()` with cleanup on unmount (mirror LobbyPage's pattern exactly); compute `isDrawer = room.drawerId === participantId`; replace the canvas placeholder section with a role banner — "You are the drawer" + `room.word` when `isDrawer`, "You are guessing" otherwise — depends on T005
 
@@ -68,9 +68,9 @@ No new project setup is required. The backend and frontend dev servers, TypeScri
 
 ### Implementation for User Story 2
 
-- [ ] T009 [P] [US2] Add local `nameError` state and name validation to `frontend/src/pages/CreateRoomPage.tsx` (or the page/component responsible for the create-room form): in the submit handler, trim the name value, if empty set `nameError` to "Name is required" and return early; clear `nameError` on input change; render the error message below the name input
+- [ ] T009 [P] [US2] Add local `nameError` state and name validation to `frontend/src/pages/CreateRoomPage.tsx` (or the page/component responsible for the create-room form): in the submit handler, use `String.prototype.trim()` (leading/trailing whitespace only — do not normalise internal spaces), if the trimmed value is empty set `nameError` to "Name is required" and return early with no API call; clear `nameError` on input change; render the error message below the name input
 
-- [ ] T010 [P] [US2] Add local `nameError` state and name validation to `frontend/src/pages/JoinRoomPage.tsx`: in the submit handler, trim the name value, if empty set `nameError` to "Name is required" and return early; clear `nameError` on input change; render the error message below the name input (room code validation already exists from Scenario 1 — do not remove it)
+- [ ] T010 [P] [US2] Add local `nameError` state and name validation to `frontend/src/pages/JoinRoomPage.tsx`: in the submit handler, use `String.prototype.trim()` (leading/trailing whitespace only), if the trimmed value is empty set `nameError` to "Name is required" and return early with no API call; clear `nameError` on input change; render the error message below the name input (room code validation already exists from Scenario 1 — do not remove it)
 
 **Checkpoint**: User Story 2 fully functional and independent of US1. Name validation works on both forms.
 
