@@ -72,7 +72,7 @@ All players (drawer and guessers) can see the full guess history and the scorebo
 
 ### Edge Cases
 
-- What happens if a guesser submits the same correct word twice? → The second submission is recorded but scores do not double — once a player has a correct guess their score stays at 100.
+- What happens if a guesser submits the same correct word twice? → The second submission is recorded with `isCorrect: false` and the score stays at 100 — the guess appears in history but is not marked as a correct guess.
 - What happens if the drawer submits a guess? → The guess input is not shown to the drawer; no server-side enforcement needed for this scenario.
 - What happens if the guess input is empty or whitespace-only? → Rejected with an inline error before any network call.
 - What happens if two guessers submit the correct word simultaneously? → Both are recorded as correct; both receive 100 points independently.
@@ -90,10 +90,10 @@ All players (drawer and guessers) can see the full guess history and the scorebo
 - **FR-006**: The system MUST expose a `POST /rooms/:code/guess` endpoint that accepts a participant ID and guess text, records the guess, evaluates correctness (case-insensitive match against the room's `currentWord`), and awards 100 points to the guesser if correct.
 - **FR-007**: Submitted guesses MUST be appended to a persistent guess history on the backend (in-memory), each entry recording: participant ID, participant name, guess text, correctness, and timestamp.
 - **FR-008**: The `GET /rooms/:code` polling response MUST include the full guess history and per-participant scores so all clients can render them without additional requests.
-- **FR-009**: The guess history MUST be displayed to all players (drawer and guessers) in chronological order, showing player name, guess text, and a visual indicator of correct or incorrect.
-- **FR-010**: A scoreboard MUST be visible to all players showing each participant's name and current score.
+- **FR-009**: The guess history MUST be displayed to all players (drawer and guessers) in chronological order, showing player name, guess text, and a visual indicator of correct or incorrect — correct guesses MUST show a "✓" indicator and incorrect guesses MUST show a "✗" indicator.
+- **FR-010**: A scoreboard MUST be visible to all players showing each participant's name and current score, sorted by score descending.
 - **FR-011**: An empty or whitespace-only guess MUST be rejected on the frontend with an inline error message before any network request is made.
-- **FR-012**: Once a participant has a correct guess (score = 100), subsequent correct guesses from the same participant do not increase their score further.
+- **FR-012**: Once a participant has a correct guess (score = 100), subsequent guesses of the correct word from the same participant MUST be recorded with `isCorrect: false` and MUST NOT increase the score. The guess is still appended to the history so all players can see it.
 - **FR-013**: When a game starts (`POST /rooms/:code/start`), all current participants MUST have their scores initialised to 0 so the scoreboard is populated from the first poll.
 
 ### Key Entities
