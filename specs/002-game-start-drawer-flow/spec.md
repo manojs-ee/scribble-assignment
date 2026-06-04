@@ -8,6 +8,14 @@
 
 **Input**: User description: "Scenario 2: Game Start and Drawer Flow. When the host clicks Start Game in the lobby, POST /rooms/:code/start is called. This transitions room status from 'lobby' to 'playing', assigns the drawer (the host / first participant via room.hostId), and picks the secret word deterministically (using an index based on room creation count, never Math.random()). The RoomSnapshot is updated to include drawerId, status ('playing'), and word — but word is only returned to the drawer participant. On the frontend, GamePage shows the drawer their word and displays 'You are the drawer'. All other players see 'You are guessing'. Player name validation: trim names on create and join forms; reject empty or whitespace-only names with a clear error message before submitting."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: How should the backend filter the `word` field — how does it know which participant is requesting? → A: Add `?participantId=<id>` query param to `GET /rooms/:code`; backend returns `word` only when `participantId === room.drawerId`.
+- Q: How does GamePage receive the room code and participant ID it needs to poll? → A: GamePage reads `roomCode` and `participantId` from the existing frontend `roomStore` — no route params needed.
+- Q: Does GamePage poll `GET /rooms/:code` on an interval, or render a static snapshot? → A: GamePage polls `GET /rooms/:code?participantId=<id>` every ~2 seconds, same pattern as LobbyPage.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Host Starts the Game (Priority: P1)
@@ -75,17 +83,18 @@ The secret word chosen when a game starts is always the same for a given room cr
 - **FR-003**: On game start, the system MUST assign the drawer role to the host participant (identified by `room.hostId`).
 - **FR-004**: On game start, the system MUST select the secret word deterministically using a fixed index rule based on total room creation count (e.g., `STARTER_WORDS[creationCount % STARTER_WORDS.length]`); `Math.random()` MUST NOT be used.
 - **FR-005**: The room snapshot returned by `GET /rooms/:code` MUST include `drawerId` and `status` fields after the game has started.
-- **FR-006**: The `word` field in the room snapshot MUST only be returned to the drawer participant; all other participants MUST receive no word or a masked value.
+- **FR-006**: The `word` field in the room snapshot MUST only be returned to the drawer participant. The frontend MUST pass `?participantId=<id>` as a query parameter on every `GET /rooms/:code` poll; the backend includes `word` in the response only when `participantId` matches `room.drawerId`. All other participants receive the snapshot without the `word` field.
 - **FR-007**: The frontend game page MUST display "You are the drawer" and the secret word to the drawer.
 - **FR-008**: The frontend game page MUST display "You are guessing" to all non-drawer participants, with no word visible.
 - **FR-009**: The Create Room form MUST trim the player name and reject empty or whitespace-only names with an inline error message before making any network request.
 - **FR-010**: The Join Room form MUST trim the player name and reject empty or whitespace-only names with an inline error message before making any network request.
 - **FR-011**: The LobbyPage "Start Game" button MUST call `POST /rooms/:code/start` rather than navigate directly; successful response navigates to the game page.
+- **FR-012**: The GamePage MUST poll `GET /rooms/:code?participantId=<id>` approximately every 2 seconds using a `setInterval`/`useEffect` pattern matching LobbyPage, and clean up the interval on unmount.
 
 ### Key Entities
 
 - **Room**: Has `status` ("lobby" | "playing"), `hostId`, `drawerId` (set on game start), `currentWord` (set on game start), and `creationIndex` (a server-maintained counter used for word selection).
-- **RoomSnapshot**: Public view of Room — includes `status`, `drawerId`; includes `word` only when the requesting participant is the drawer.
+- **RoomSnapshot**: Public view of Room — includes `status`, `drawerId`; includes `word` only when the `participantId` query parameter on `GET /rooms/:code` matches `drawerId`.
 - **Participant**: Has `id` and `name` (trimmed, non-empty). The participant whose `id` matches `room.hostId` is the drawer.
 
 ## Success Criteria *(mandatory)*
@@ -100,8 +109,8 @@ The secret word chosen when a game starts is always the same for a given room cr
 
 ## Assumptions
 
-- The existing `GET /rooms/:code` endpoint is reused for polling during the game; no new polling endpoint is needed.
-- The participant's own `id` is available in frontend state (via `roomStore`) so the game page can determine if the current user is the drawer.
+- The existing `GET /rooms/:code` endpoint is reused for polling during the game; no new polling endpoint is needed. GamePage polls it every ~2 seconds (same pattern as LobbyPage), passing `?participantId=<id>` so the backend can filter the word field. GamePage reads `roomCode` and `participantId` from the existing frontend `roomStore` on mount — no route parameters are required.
+- The participant's own `id` is available in frontend state (via `roomStore`) and is passed as `?participantId=<id>` on every `GET /rooms/:code` poll so the backend can filter the `word` field appropriately.
 - The word list (`STARTER_WORDS`) already exists in `backend/src/seed/starterData.ts` and is non-empty.
 - A room creation counter is added to the backend in-memory store (e.g., a module-level integer incremented each time a room is created) to support deterministic word selection.
 - Only one round is in scope; drawer rotation, timers, and multiple rounds are out of scope.
