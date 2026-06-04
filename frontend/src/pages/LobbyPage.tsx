@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/Card";
 import { PageHeader } from "../components/PageHeader";
@@ -9,6 +9,7 @@ export function LobbyPage() {
   const navigate = useNavigate();
   const roomStore = useRoomStore();
   const { room, participantId } = useRoomState();
+  const [startError, setStartError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!room) {
@@ -68,10 +69,19 @@ export function LobbyPage() {
 
       {isHost && (
         <div className="button-row button-row--spread">
+          {startError ? <p className="form__error">{startError}</p> : null}
           <button
             className="button button--primary"
             disabled={!canStart}
-            onClick={() => navigate("/game")}
+            onClick={async () => {
+              try {
+                setStartError(null);
+                await roomStore.startRoom();
+                navigate("/game");
+              } catch (err) {
+                setStartError(err instanceof Error ? err.message : "Could not start game — try again");
+              }
+            }}
           >
             {canStart ? "Start Game" : "Waiting for players…"}
           </button>

@@ -5,10 +5,11 @@ import { GuessForm } from "../components/GuessForm";
 import { ResultPanel } from "../components/ResultPanel";
 import { RoomCodeBadge } from "../components/RoomCodeBadge";
 import { Scoreboard } from "../components/Scoreboard";
-import { useRoomState } from "../state/roomStore";
+import { useRoomState, useRoomStore } from "../state/roomStore";
 
 export function GamePage() {
   const navigate = useNavigate();
+  const roomStore = useRoomStore();
   const { room, participantId } = useRoomState();
 
   useEffect(() => {
@@ -17,10 +18,19 @@ export function GamePage() {
     }
   }, [navigate, room]);
 
+  useEffect(() => {
+    if (!room) return;
+    const interval = setInterval(() => {
+      roomStore.fetchRoom().catch(() => {});
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [room?.code, roomStore]);
+
   if (!room) {
     return null;
   }
 
+  const isDrawer = room.drawerId === participantId;
   const viewer = room.participants.find((participant) => participant.id === participantId) ?? null;
 
   return (
@@ -41,8 +51,15 @@ export function GamePage() {
 
         <div className="game-page__main">
           <Card title="Canvas">
-            <div className="canvas-placeholder" style={{ minHeight: '500px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb' }}>
-              Waiting for drawer...
+            <div className="canvas-placeholder" style={{ minHeight: '200px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '24px' }}>
+              {isDrawer ? (
+                <div>
+                  <p className="section-kicker">You are the drawer</p>
+                  <p style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '8px' }}>{room.word}</p>
+                </div>
+              ) : (
+                <p className="section-kicker">You are guessing</p>
+              )}
             </div>
           </Card>
         </div>
@@ -55,8 +72,8 @@ export function GamePage() {
                 <dd>{viewer?.name ?? "Unknown player"}</dd>
               </div>
               <div>
-                <dt>Status</dt>
-                <dd>Playing</dd>
+                <dt>Role</dt>
+                <dd>{isDrawer ? "Drawer" : "Guesser"}</dd>
               </div>
             </dl>
           </Card>

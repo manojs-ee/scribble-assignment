@@ -6,7 +6,7 @@ import {
   roomCodeParamsSchema,
   roomViewerQuerySchema
 } from "./schemas.js";
-import { createRoom, getRoom, joinRoom, toRoomSnapshot } from "../services/roomStore.js";
+import { createRoom, getRoom, joinRoom, startGame, toRoomSnapshot } from "../services/roomStore.js";
 
 export function createRoomsRouter() {
   const router = Router();
@@ -38,6 +38,27 @@ export function createRoomsRouter() {
       response.json({
         participantId: result.participantId,
         room: toRoomSnapshot(result.room, result.participantId)
+      });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/start", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const result = startGame(code.toUpperCase());
+
+      if ("error" in result) {
+        if (result.error === "not_found") {
+          throw new HttpError(404, "Room not found — check your code and try again");
+        }
+        throw new HttpError(409, "Game has already started");
+      }
+
+      response.json({
+        participantId: result.room.drawerId,
+        room: toRoomSnapshot(result.room, result.room.drawerId)
       });
     } catch (error) {
       next(error);

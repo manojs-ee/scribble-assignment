@@ -1,5 +1,5 @@
 export type ParticipantRole = "drawer" | "guesser";
-export type RoomStatus = "lobby";
+export type RoomStatus = "lobby" | "playing";
 
 export interface Participant {
   id: string;
@@ -12,6 +12,9 @@ export interface Room {
   status: RoomStatus;
   participants: Participant[];
   hostId: string;
+  drawerId?: string;
+  currentWord?: string;
+  wordIndex: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +24,8 @@ export interface RoomSnapshot {
   status: RoomStatus;
   participants: Participant[];
   hostId: string;
+  drawerId?: string;
+  word?: string;
   availableWords: string[];
   roles: ParticipantRole[];
 }
