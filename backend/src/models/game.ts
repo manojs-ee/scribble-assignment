@@ -11,6 +11,7 @@ export interface Room {
   code: string;
   status: RoomStatus;
   participants: Participant[];
+  hostId: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -19,6 +20,7 @@ export interface RoomSnapshot {
   code: string;
   status: RoomStatus;
   participants: Participant[];
+  hostId: string;
   availableWords: string[];
   roles: ParticipantRole[];
 }

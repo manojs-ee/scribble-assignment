@@ -14,7 +14,7 @@
 
 **Purpose**: Unblock all frontend API work before anything else.
 
-- [ ] T001 Fix API base URL bug — remove `/bug` suffix in `frontend/src/services/api.ts:22`, change to `http://localhost:3001` [FR-003, Constitution §I]
+- [x] T001 Fix API base URL bug — remove `/bug` suffix in `frontend/src/services/api.ts:22`, change to `http://localhost:3001` [FR-003, Constitution §I]
 
 **Checkpoint**: `GET /health` returns `{ ok: true }` from the frontend. All subsequent API calls reach the backend.
 
@@ -26,10 +26,10 @@
 
 ⚠️ **CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T002 Add `hostId: string` field to both `Room` and `RoomSnapshot` interfaces in `backend/src/models/game.ts` [FR-001, FR-002]
-- [ ] T003 Set `room.hostId = participant.id` in `createRoom()` in `backend/src/services/roomStore.ts` [FR-001]
-- [ ] T004 Expose `hostId` in `toRoomSnapshot()` return value in `backend/src/services/roomStore.ts` [FR-002]
-- [ ] T005 Add `hostId: string` field to frontend `RoomSnapshot` interface in `frontend/src/services/api.ts` [FR-002]
+- [x] T002 Add `hostId: string` field to both `Room` and `RoomSnapshot` interfaces in `backend/src/models/game.ts` [FR-001, FR-002]
+- [x] T003 Set `room.hostId = participant.id` in `createRoom()` in `backend/src/services/roomStore.ts` [FR-001]
+- [x] T004 Expose `hostId` in `toRoomSnapshot()` return value in `backend/src/services/roomStore.ts` [FR-002]
+- [x] T005 Add `hostId: string` field to frontend `RoomSnapshot` interface in `frontend/src/services/api.ts` [FR-002]
 
 **Checkpoint**: Create a room via `POST /rooms` and confirm the response includes `room.hostId` equal to `participantId`. Verify in browser Network tab or with `curl`.
 
@@ -41,7 +41,7 @@
 
 **Independent Test**: Create a room in one tab. Confirm lobby shows a host indicator next to the creator's name.
 
-- [ ] T006 [US1] Add host visual indicator (e.g. "(Host)" label) next to the host participant in the player list in `frontend/src/pages/LobbyPage.tsx` — derive `isHost` as `room.hostId === participantId` [FR-001, FR-002, Spec §US1-AC2]
+- [x] T006 [US1] Add host visual indicator (e.g. "(Host)" label) next to the host participant in the player list in `frontend/src/pages/LobbyPage.tsx` — derive `isHost` as `room.hostId === participantId` [FR-001, FR-002, Spec §US1-AC2]
 
 **Checkpoint**: One tab — create room, land in lobby, confirm host indicator visible on the creator's entry. US1 independently verified.
 
@@ -53,8 +53,8 @@
 
 **Independent Test**: Tab 2 joins Tab 1's room with a valid code — both appear in each other's lobby. Tab 2 submits empty code → "Room code is required". Tab 2 submits wrong code → "Room not found — check your code and try again".
 
-- [ ] T007 [US2] Add Zod `.trim().min(1)` refinement to `code` in `roomCodeParamsSchema` in `backend/src/api/schemas.ts` — return 400 with `{ message: "Room code is required" }` for empty/whitespace codes [FR-006]
-- [ ] T008 [US2] Update 404 message in `joinRoom` handler in `backend/src/api/rooms.ts` from `"Unable to join room"` to `"Room not found — check your code and try again"` [FR-007]
+- [x] T007 [US2] Add Zod `.trim().min(1)` refinement to `code` in `roomCodeParamsSchema` in `backend/src/api/schemas.ts` — return 400 with `{ message: "Room code is required" }` for empty/whitespace codes [FR-006]
+- [x] T008 [US2] Update 404 message in `joinRoom` handler in `backend/src/api/rooms.ts` from `"Unable to join room"` to `"Room not found — check your code and try again"` [FR-007]
 
 **Checkpoint**: Two browser tabs — valid join works; empty code shows "Room code is required"; non-existent code shows "Room not found — check your code and try again". US2 independently verified.
 
@@ -66,7 +66,7 @@
 
 **Independent Test**: Tab 1 in lobby. Tab 2 joins. Tab 1's participant list updates within 2 seconds with no button press. Navigate Tab 1 away — Network tab shows polling stops.
 
-- [ ] T009 [US3] Replace manual `handleRefresh` + "Refresh Room" button with `useEffect` + `setInterval(2000)` calling `roomStore.fetchRoom()` in `frontend/src/pages/LobbyPage.tsx` — remove `refreshError` state and `handleRefresh` function entirely, return cleanup function that calls `clearInterval` [FR-003, FR-009, FR-010]
+- [x] T009 [US3] Replace manual `handleRefresh` + "Refresh Room" button with `useEffect` + `setInterval(2000)` calling `roomStore.fetchRoom()` in `frontend/src/pages/LobbyPage.tsx` — remove `refreshError` state and `handleRefresh` function entirely, return cleanup function that calls `clearInterval` [FR-003, FR-009, FR-010]
 
 **Checkpoint**: Two tabs — joiner appears in host's lobby within 2 seconds. Navigate away — polling stops. Single poll failure does not break the loop (can simulate with backend restart). Also open a second room in a third tab and confirm participant lists are fully isolated (FR-008, SC-005). US3 independently verified.
 
@@ -78,7 +78,7 @@
 
 **Independent Test**: Host tab (1 player) — button visible, disabled. Second tab joins. Within 2 seconds — button enables for host. Second tab — no button visible.
 
-- [ ] T010 [US4] Gate Start Game button to host-only with 2-player minimum in `frontend/src/pages/LobbyPage.tsx`:
+- [x] T010 [US4] Gate Start Game button to host-only with 2-player minimum in `frontend/src/pages/LobbyPage.tsx`:
   - derive `isHost = room.hostId === participantId`
   - derive `canStart = isHost && room.participants.length >= 2`
   - render button only when `isHost`, disabled when `!canStart`
@@ -92,9 +92,9 @@
 
 **Purpose**: Clean up starter noise introduced by the above changes.
 
-- [ ] T011 Add frontend validation in `frontend/src/pages/JoinRoomPage.tsx` — trim room code before submit; if empty after trim show "Room code is required" inline without making an API call [FR-006]
-- [ ] T012 [P] Run `cd backend && npm run build` — confirm zero TypeScript errors
-- [ ] T013 [P] Run `cd frontend && npm run build` — confirm zero TypeScript errors
+- [x] T011 Add frontend validation in `frontend/src/pages/JoinRoomPage.tsx` — trim room code before submit; if empty after trim show "Room code is required" inline without making an API call [FR-006]
+- [x] T012 [P] Run `cd backend && npm run build` — confirm zero TypeScript errors
+- [x] T013 [P] Run `cd frontend && npm run build` — confirm zero TypeScript errors
 
 **Checkpoint**: Both builds pass clean. Ready for Scenario 2 spec iteration.
 

@@ -9,7 +9,7 @@ export const joinRoomSchema = z.object({
 });
 
 export const roomCodeParamsSchema = z.object({
-  code: z.string()
+  code: z.string().trim().min(1, { message: "Room code is required" })
 });
 
 export const roomViewerQuerySchema = z.object({
