@@ -8,6 +8,13 @@
 
 **Input**: User description: "Scenario 4: Result State and Restart Flow. After a correct guess, the game transitions to a 'finished' status. All players see a results screen showing who won (the correct guesser), the secret word, and the final scoreboard. The host sees a 'Play Again' button that resets the room back to lobby state (clears the canvas, guesses, scores, and word) so a new game can begin with the same players. Non-host players see a message that the host can restart. No new rounds with different drawers — restart means the same host becomes drawer again."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: Should the results screen be a new route or a display mode within GamePage? → A: GamePage detects `room.status === "finished"` and renders results view inline — no new route or page component needed.
+- Q: Can `winnerId` be overwritten after the first correct guess? → A: No — `winnerId` is set exactly once on the first correct guess that transitions the room to "finished"; `submitGuess()` returns 409 when room status is "finished".
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Game Ends and Results Screen Appears (Priority: P1)
@@ -46,7 +53,7 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 
 ### Edge Cases
 
-- What if two guessers submit the correct answer simultaneously? → The first to be recorded by the server triggers the "finished" transition; both guesses appear in history but only the first recorded correct guesser is the winner.
+- What if two guessers submit the correct answer simultaneously? → The first to be recorded by the server triggers the "finished" transition and is set as the winner. The second call to `submitGuess()` sees the room is already "finished" and returns 409 — the second guess is not recorded.
 - What if the host leaves (closes their tab) before clicking Play Again? → Non-host players remain on the results screen indefinitely; no auto-reset occurs (no disconnect detection in scope).
 - What if Play Again is clicked multiple times rapidly? → The server rejects duplicate resets — if the room is already in "lobby" status, the call is a no-op or returns an appropriate response.
 - What if a player joins the room while it is in "finished" status? → Out of scope; no join-mid-game handling.
@@ -55,9 +62,9 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 
 ### Functional Requirements
 
-- **FR-001**: When a correct guess is submitted, the system MUST transition the room status from "playing" to "finished" and record the winning participant's ID.
+- **FR-001**: When a correct guess is submitted, the system MUST transition the room status from "playing" to "finished" and record the winning participant's ID (`winnerId`). This transition happens exactly once — `winnerId` is never overwritten. Subsequent calls to `POST /rooms/:code/guess` on a "finished" room MUST return 409.
 - **FR-002**: The `GET /rooms/:code` polling response MUST include the room's "finished" status and the winner's participant ID so all clients can detect the game end.
-- **FR-003**: When a client detects room status "finished" via polling, it MUST navigate to a results screen automatically.
+- **FR-003**: When a client detects room status "finished" via polling, the GamePage MUST switch to a results display mode inline — no navigation to a new route is required.
 - **FR-004**: The results screen MUST display: the winner's name, the secret word, and the final scoreboard (all participants and their scores).
 - **FR-005**: The results screen MUST show a "Play Again" button to the host only.
 - **FR-006**: Non-host players on the results screen MUST see a message indicating the host can start a new game (no Play Again button).
@@ -86,7 +93,7 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 - The "finished" transition is triggered server-side when a correct guess is submitted via `POST /rooms/:code/guess` — no separate endpoint is needed to trigger game end.
 - Only one winner is possible per game: the first participant to submit a correct guess (as recorded by the server). If no correct guess is submitted, the game never reaches "finished".
 - The winner's name is resolved on the frontend by looking up `winnerId` in `room.participants`.
-- The results screen replaces the game page — it is not a separate route; the GamePage detects "finished" status and switches its display mode, OR a new `/results` page is used. Either approach is acceptable; the spec does not prescribe the routing implementation.
+- The results screen is rendered inline within the existing GamePage by detecting `room.status === "finished"` — no new route or page component is introduced.
 - After restart, the room returns to exactly the same state as a freshly started lobby with the original participants — no score history is preserved across rounds.
 - Only the host can trigger a restart; this is enforced on the frontend only (checking `hostId === participantId`). No backend auth check is required for this scenario.
 - Players who are already on the GamePage when the game ends will transition to the results view via the existing polling mechanism — no push notification needed.
