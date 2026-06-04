@@ -65,11 +65,11 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 - **FR-001**: When a correct guess is submitted, the system MUST transition the room status from "playing" to "finished" and record the winning participant's ID (`winnerId`). This transition happens exactly once — `winnerId` is never overwritten. Subsequent calls to `POST /rooms/:code/guess` on a "finished" room MUST return 409.
 - **FR-002**: The `GET /rooms/:code` polling response MUST include the room's "finished" status and the winner's participant ID so all clients can detect the game end.
 - **FR-003**: When a client detects room status "finished" via polling, the GamePage MUST switch to a results display mode inline — no navigation to a new route is required.
-- **FR-004**: The results screen MUST display: the winner's name, the secret word, and the final scoreboard (all participants and their scores).
+- **FR-004**: The results screen MUST display: the winner's name, the secret word, and the final scoreboard (all participants and their scores). The secret word MUST be derived from the text of the winning guess entry in the guess history — this entry is visible to all players regardless of their role, so no additional backend filtering is needed.
 - **FR-005**: The results screen MUST show a "Play Again" button to the host only.
 - **FR-006**: Non-host players on the results screen MUST see a message indicating the host can start a new game (no Play Again button).
 - **FR-007**: The system MUST expose a `POST /rooms/:code/restart` endpoint that resets the room to "lobby" status, clearing strokes, guesses, scores, word, drawerId, and winnerId.
-- **FR-008**: After a successful restart, all clients MUST detect the "lobby" status via polling and navigate back to the lobby page.
+- **FR-008**: After a successful restart, the GamePage MUST monitor room status via its existing polling and navigate to the lobby page when the status returns to "lobby".
 - **FR-009**: The restart endpoint MUST be idempotent for rooms already in "lobby" status — calling it on a lobby room MUST return success without error.
 
 ### Key Entities
