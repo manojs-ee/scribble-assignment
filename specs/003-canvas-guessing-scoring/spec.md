@@ -8,6 +8,14 @@
 
 **Input**: User description: "Scenario 3: Drawing Canvas, Guessing & Scoring. The drawer sees a drawing canvas they can draw on with a mouse/touch. There is a Clear Canvas button that wipes the drawing. Guessers see the canvas (read-only) updating via polling. Guessers can submit a guess via a text input and button. Each guess is recorded in a guess history visible to all players. If a guess matches the secret word (case-insensitive), it is marked as correct and that guesser gets 100 points. Incorrect guesses score 0. Scores are shown in a scoreboard visible to all players. All guess history and scores update via the existing polling on GET /rooms/:code. No WebSockets, no timers, no multiple rounds."
 
+## Clarifications
+
+### Session 2026-06-04
+
+- Q: How does the drawer send stroke data to the backend? → A: `POST /rooms/:code/stroke` on pointer-up — one request per completed stroke; backend appends to stroke list; guessers see it at next poll.
+- Q: How does Clear Canvas reset the shared drawing state? → A: `POST /rooms/:code/clear-canvas` — dedicated endpoint that empties the backend stroke list; guessers see blank canvas at next poll.
+- Q: When are participant scores initialised? → A: All current participants initialised to 0 on `POST /rooms/:code/start`; scoreboard shows all players from game start.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Drawer Draws on the Canvas (Priority: P1)
@@ -75,9 +83,9 @@ All players (drawer and guessers) can see the full guess history and the scorebo
 ### Functional Requirements
 
 - **FR-001**: The game page MUST display an interactive drawing canvas to the drawer, accepting mouse-down/move/up and touch-start/move/end events to produce continuous strokes.
-- **FR-002**: The drawer MUST have a "Clear Canvas" button that wipes all strokes from the canvas and resets the shared drawing state so guessers see a blank canvas at the next poll.
+- **FR-002**: The drawer MUST have a "Clear Canvas" button that calls `POST /rooms/:code/clear-canvas`, which empties the backend stroke list. Guessers see a blank canvas at the next poll. The drawer's local canvas is also cleared immediately on click.
 - **FR-003**: The canvas MUST be read-only for guessers — no drawing interaction is possible for non-drawer participants.
-- **FR-004**: The drawing state (strokes) MUST be stored on the backend and included in `GET /rooms/:code` polling responses so guessers can render the current drawing.
+- **FR-004**: The drawing state (strokes) MUST be stored on the backend and included in `GET /rooms/:code` polling responses so guessers can render the current drawing. The drawer MUST send each completed stroke via `POST /rooms/:code/stroke` on pointer-up; the backend appends it to the room's stroke list.
 - **FR-005**: Guessers MUST see a guess input field and submit button; the drawer MUST NOT see the guess input.
 - **FR-006**: The system MUST expose a `POST /rooms/:code/guess` endpoint that accepts a participant ID and guess text, records the guess, evaluates correctness (case-insensitive match against the room's `currentWord`), and awards 100 points to the guesser if correct.
 - **FR-007**: Submitted guesses MUST be appended to a persistent guess history on the backend (in-memory), each entry recording: participant ID, participant name, guess text, correctness, and timestamp.
@@ -86,6 +94,7 @@ All players (drawer and guessers) can see the full guess history and the scorebo
 - **FR-010**: A scoreboard MUST be visible to all players showing each participant's name and current score.
 - **FR-011**: An empty or whitespace-only guess MUST be rejected on the frontend with an inline error message before any network request is made.
 - **FR-012**: Once a participant has a correct guess (score = 100), subsequent correct guesses from the same participant do not increase their score further.
+- **FR-013**: When a game starts (`POST /rooms/:code/start`), all current participants MUST have their scores initialised to 0 so the scoreboard is populated from the first poll.
 
 ### Key Entities
 
@@ -109,9 +118,9 @@ All players (drawer and guessers) can see the full guess history and the scorebo
 - Drawing state is stored in-memory on the backend as an array of strokes (each stroke = array of `{x, y}` points); it is not persisted across server restarts.
 - The canvas size is fixed (not responsive to window resize) for simplicity; a reasonable default size (e.g. 600×400) is used.
 - Stroke colour and brush size are fixed (single colour, single width) — no colour picker or brush controls are in scope.
-- The drawer's local canvas renders immediately on pointer events; the backend stroke state is sent on each pointer-up (end of stroke) to avoid per-pixel polling overhead.
+- The drawer's local canvas renders immediately on pointer events (no lag); `POST /rooms/:code/stroke` is called once on pointer-up (end of each stroke) with the full point array for that stroke. This avoids per-pixel network traffic while keeping guesser lag to ≤1 polling cycle after stroke completion.
 - The `GET /rooms/:code` response is extended to include `strokes`, `guesses`, and `scores`; no new polling endpoint is needed.
 - A participant's `id` and `name` are available in frontend state (via `roomStore`) for attaching to guess submissions.
 - Once a correct guess is made, the game continues (no auto-end, no round transition) — that is Scenario 4's concern.
 - The drawer cannot submit guesses; this is enforced on the frontend only (no backend validation needed for this scenario).
-- Scores start at 0 for all participants when the game starts; they are stored in the backend `Room` object as a `Map<participantId, score>`.
+- Scores are initialised to 0 for all current participants at the moment `POST /rooms/:code/start` is called, stored in the backend `Room` object as a `Map<participantId, score>`. The scoreboard therefore shows all players with 0 points from the very start of the game.

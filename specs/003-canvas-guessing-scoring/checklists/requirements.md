@@ -31,4 +31,4 @@
 
 ## Notes
 
-All 16 items pass. Spec is ready for `/speckit-clarify`.
+All 16 items pass. Clarifications integrated 2026-06-04 (3 questions answered). Spec is ready for `/speckit-plan`.
