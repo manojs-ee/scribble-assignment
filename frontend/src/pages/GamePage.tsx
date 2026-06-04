@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card } from "../components/Card";
+import { DrawingCanvas } from "../components/DrawingCanvas";
 import { GuessForm } from "../components/GuessForm";
 import { ResultPanel } from "../components/ResultPanel";
 import { RoomCodeBadge } from "../components/RoomCodeBadge";
@@ -45,22 +46,22 @@ export function GamePage() {
 
       <div className="game-page__layout">
         <aside className="game-page__sidebar game-page__sidebar--left">
-          <Scoreboard />
-          <ResultPanel />
+          <Scoreboard participants={room.participants} scores={room.scores ?? {}} />
+          <ResultPanel guesses={room.guesses ?? []} />
         </aside>
 
         <div className="game-page__main">
-          <Card title="Canvas">
-            <div className="canvas-placeholder" style={{ minHeight: '200px', backgroundColor: '#ffffff', border: '1px solid #e5e7eb', padding: '24px' }}>
-              {isDrawer ? (
-                <div>
-                  <p className="section-kicker">You are the drawer</p>
-                  <p style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '8px' }}>{room.word}</p>
-                </div>
-              ) : (
-                <p className="section-kicker">You are guessing</p>
-              )}
-            </div>
+          <Card title={isDrawer ? `Draw: ${room.word ?? ""}` : "Canvas"}>
+            <DrawingCanvas
+              strokes={room.strokes ?? []}
+              isDrawer={isDrawer}
+              onStroke={async (points) => {
+                try { await roomStore.addStroke(points); } catch {}
+              }}
+              onClear={async () => {
+                try { await roomStore.clearCanvas(); } catch {}
+              }}
+            />
           </Card>
         </div>
 
@@ -78,9 +79,14 @@ export function GamePage() {
             </dl>
           </Card>
 
-          <Card title="Your Guess">
-            <GuessForm />
-          </Card>
+          {!isDrawer && (
+            <Card title="Your Guess">
+              <GuessForm
+                onSubmit={async (text) => { await roomStore.submitGuess(text); }}
+                disabled={false}
+              />
+            </Card>
+          )}
         </aside>
       </div>
 

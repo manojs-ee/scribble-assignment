@@ -1,12 +1,14 @@
 import { Router } from "express";
 import {
   createRoomSchema,
+  guessSchema,
   HttpError,
   joinRoomSchema,
   roomCodeParamsSchema,
-  roomViewerQuerySchema
+  roomViewerQuerySchema,
+  strokeSchema
 } from "./schemas.js";
-import { createRoom, getRoom, joinRoom, startGame, toRoomSnapshot } from "../services/roomStore.js";
+import { addStroke, clearCanvas, createRoom, getRoom, joinRoom, startGame, submitGuess, toRoomSnapshot } from "../services/roomStore.js";
 
 export function createRoomsRouter() {
   const router = Router();
@@ -39,6 +41,56 @@ export function createRoomsRouter() {
         participantId: result.participantId,
         room: toRoomSnapshot(result.room, result.participantId)
       });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/stroke", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { points } = strokeSchema.parse(request.body);
+      const result = addStroke(code.toUpperCase(), points);
+
+      if ("error" in result) {
+        if (result.error === "not_found") throw new HttpError(404, "Room not found — check your code and try again");
+        throw new HttpError(409, "Game is not in progress");
+      }
+
+      response.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/clear-canvas", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const result = clearCanvas(code.toUpperCase());
+
+      if ("error" in result) {
+        if (result.error === "not_found") throw new HttpError(404, "Room not found — check your code and try again");
+        throw new HttpError(409, "Game is not in progress");
+      }
+
+      response.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post("/:code/guess", (request, response, next) => {
+    try {
+      const { code } = roomCodeParamsSchema.parse(request.params);
+      const { participantId, text } = guessSchema.parse(request.body);
+      const result = submitGuess(code.toUpperCase(), participantId, text);
+
+      if ("error" in result) {
+        if (result.error === "not_found") throw new HttpError(404, "Room or participant not found");
+        throw new HttpError(409, "Game is not in progress");
+      }
+
+      response.json({ guess: result.guess, score: result.score });
     } catch (error) {
       next(error);
     }

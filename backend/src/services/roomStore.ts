@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import type { Participant, Room, RoomSnapshot } from "../models/game.js";
+import type { Guess, Participant, Point, Room, RoomSnapshot } from "../models/game.js";
 import { STARTER_ROLES, STARTER_WORDS } from "../seed/starterData.js";
 
 const rooms = new Map<string, Room>();
@@ -59,6 +59,9 @@ export function createRoom(playerName?: string) {
     participants: [participant],
     hostId: participant.id,
     wordIndex: roomCreationCount % STARTER_WORDS.length,
+    strokes: [],
+    guesses: [],
+    scores: {},
     createdAt: now(),
     updatedAt: now()
   };
@@ -114,9 +117,65 @@ export function startGame(code: string): { error: "not_found" | "already_playing
   room.status = "playing";
   room.drawerId = room.hostId;
   room.currentWord = STARTER_WORDS[room.wordIndex] as string;
+  room.strokes = [];
+  room.guesses = [];
+  room.scores = Object.fromEntries(room.participants.map((p) => [p.id, 0]));
   saveRoom(room);
 
   return { room: cloneRoom(room) };
+}
+
+export function addStroke(code: string, points: Point[]): { error: "not_found" | "not_playing" } | { ok: true } {
+  const room = rooms.get(code);
+  if (!room) return { error: "not_found" };
+  if (room.status !== "playing") return { error: "not_playing" };
+  room.strokes.push(points);
+  saveRoom(room);
+  return { ok: true };
+}
+
+export function clearCanvas(code: string): { error: "not_found" | "not_playing" } | { ok: true } {
+  const room = rooms.get(code);
+  if (!room) return { error: "not_found" };
+  if (room.status !== "playing") return { error: "not_playing" };
+  room.strokes = [];
+  saveRoom(room);
+  return { ok: true };
+}
+
+export function submitGuess(
+  code: string,
+  participantId: string,
+  text: string
+): { error: "not_found" | "not_playing" } | { guess: Guess; score: number } {
+  const room = rooms.get(code);
+  if (!room) return { error: "not_found" };
+  if (room.status !== "playing") return { error: "not_playing" };
+
+  const participant = room.participants.find((p) => p.id === participantId);
+  if (!participant) return { error: "not_found" };
+
+  const currentScore = room.scores[participantId] ?? 0;
+  const textMatches = text.trim().toLowerCase() === (room.currentWord ?? "").toLowerCase();
+  const isCorrect = textMatches && currentScore < 100;
+
+  if (isCorrect) {
+    room.scores[participantId] = 100;
+  }
+
+  const guess: Guess = {
+    id: randomUUID(),
+    participantId,
+    participantName: participant.name,
+    text,
+    isCorrect,
+    timestamp: now()
+  };
+
+  room.guesses.push(guess);
+  saveRoom(room);
+
+  return { guess, score: room.scores[participantId] ?? 0 };
 }
 
 export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSnapshot {
@@ -126,6 +185,9 @@ export function toRoomSnapshot(room: Room, viewerParticipantId?: string): RoomSn
     participants: room.participants.map((participant) => ({ ...participant })),
     hostId: room.hostId,
     drawerId: room.drawerId,
+    strokes: room.strokes.map((stroke) => [...stroke]),
+    guesses: room.guesses.map((guess) => ({ ...guess })),
+    scores: { ...room.scores },
     availableWords: listWords(),
     roles: [...STARTER_ROLES]
   };
