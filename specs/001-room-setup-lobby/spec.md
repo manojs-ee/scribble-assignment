@@ -81,6 +81,8 @@ The Start Game button is visible only to the host. It is disabled until at least
 - What happens if polling fails on every attempt? → The lobby keeps the last known state and shows nothing to the user. Each failed poll is ignored silently; the next interval retries. The lobby does not crash or freeze.
 - What happens if the host refreshes the page? → Host identity is re-derived from the participant ID issued at room creation, matched against the host recorded in the room snapshot.
 - What happens with two rooms that happen to share participant names? → Rooms are isolated by code; participant identity is by `id` (UUID), not name.
+- What happens if a player tries to join a room they are already in? → A new participant entry is created — the backend has no duplicate-join detection. This is acceptable for this lab (deduplication is out of scope).
+- What happens if a poll response takes longer than 2 seconds? → The interval fires independently of response time. Overlapping requests are safe — `GET /rooms/:code` is idempotent. The last response to arrive wins.
 
 ## Requirements
 
@@ -91,7 +93,7 @@ The Start Game button is visible only to the host. It is disabled until at least
 - **FR-003**: The lobby MUST poll `GET /rooms/:code` automatically at ~2-second intervals while the lobby screen is mounted.
 - **FR-004**: The Start Game button MUST be rendered only for the host participant.
 - **FR-005**: The Start Game button MUST be disabled when fewer than 2 participants are present.
-- **FR-006**: The join form MUST reject an empty room code with the message "Room code is required".
+- **FR-006**: The join form MUST reject an empty or whitespace-only room code with the message "Room code is required".
 - **FR-007**: The join form MUST reject a code for a non-existent room with the message "Room not found — check your code and try again".
 - **FR-008**: Each room MUST maintain fully isolated participant state — joining room A MUST NOT affect room B.
 - **FR-009**: Polling MUST stop when the player navigates away from the lobby screen.
@@ -110,7 +112,7 @@ The Start Game button is visible only to the host. It is disabled until at least
 - **SC-001**: A player can create a room and land in the lobby in under 3 seconds on a local network.
 - **SC-002**: A second player joining from another tab appears in all existing players' lobby views within 2 seconds, without any manual action.
 - **SC-003**: 100% of join attempts with an empty or non-existent code display a specific, human-readable error message — no raw error codes or generic failures shown to the user.
-- **SC-004**: The Start Game button state (visible/hidden, enabled/disabled) is always consistent with the current player's host status and participant count, as updated by polling.
+- **SC-004**: The Start Game button state (visible/hidden, enabled/disabled) is always consistent with the current player's host status and participant count, as updated by polling. Falsifiable test: join as non-host and confirm no button renders; join as host with 1 player and confirm button is disabled; add second player and confirm button enables within 2 seconds.
 - **SC-005**: Two rooms created in the same session share no participant state — verified by joining each independently and confirming separate lists.
 
 ## Assumptions
