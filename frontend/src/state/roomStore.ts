@@ -112,8 +112,8 @@ class RoomStore {
   }
 
   async restartGame() {
-    if (!this.state.room) return null;
-    return api.restartGame(this.state.room.code);
+    if (!this.state.room || !this.state.participantId) return null;
+    return api.restartGame(this.state.room.code, this.state.participantId);
   }
 
   async fetchRoom() {

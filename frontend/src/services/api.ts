@@ -101,9 +101,10 @@ export const api = {
       body: JSON.stringify({ participantId, text })
     });
   },
-  restartGame(code: string) {
+  restartGame(code: string, participantId: string) {
     return request<{ ok: boolean }>(`/rooms/${encodeURIComponent(code)}/restart`, {
-      method: "POST"
+      method: "POST",
+      body: JSON.stringify({ participantId })
     });
   }
 };

@@ -4,6 +4,7 @@ import {
   guessSchema,
   HttpError,
   joinRoomSchema,
+  restartSchema,
   roomCodeParamsSchema,
   roomViewerQuerySchema,
   strokeSchema
@@ -100,10 +101,12 @@ export function createRoomsRouter() {
   router.post("/:code/restart", (request, response, next) => {
     try {
       const { code } = roomCodeParamsSchema.parse(request.params);
-      const result = restartGame(code.toUpperCase());
+      const { participantId } = restartSchema.parse(request.body);
+      const result = restartGame(code.toUpperCase(), participantId);
 
       if ("error" in result) {
-        throw new HttpError(404, "Room not found — check your code and try again");
+        if (result.error === "not_found") throw new HttpError(404, "Room not found — check your code and try again");
+        throw new HttpError(403, "Only the host can restart the game");
       }
 
       response.json({ ok: true });

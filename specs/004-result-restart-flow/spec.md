@@ -68,7 +68,7 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 - **FR-004**: The results screen MUST display: the winner's name, the secret word, and the final scoreboard (all participants and their scores). The secret word MUST be derived from the text of the winning guess entry in the guess history — this entry is visible to all players regardless of their role, so no additional backend filtering is needed.
 - **FR-005**: The results screen MUST show a "Play Again" button to the host only.
 - **FR-006**: Non-host players on the results screen MUST see a message indicating the host can start a new game (no Play Again button).
-- **FR-007**: The system MUST expose a `POST /rooms/:code/restart` endpoint that resets the room to "lobby" status, clearing strokes, guesses, scores, word, drawerId, and winnerId.
+- **FR-007**: The system MUST expose a `POST /rooms/:code/restart` endpoint that resets the room to "lobby" status, clearing strokes, guesses, scores, word, drawerId, and winnerId. The endpoint MUST reject requests from non-host participants with 403.
 - **FR-008**: After a successful restart, the GamePage MUST monitor room status via its existing polling and navigate to the lobby page when the status returns to "lobby".
 - **FR-009**: The restart endpoint MUST be idempotent for rooms already in "lobby" status — calling it on a lobby room MUST return success without error.
 
@@ -95,5 +95,5 @@ The host sees a "Play Again" button on the results screen. Clicking it resets th
 - The winner's name is resolved on the frontend by looking up `winnerId` in `room.participants`.
 - The results screen is rendered inline within the existing GamePage by detecting `room.status === "finished"` — no new route or page component is introduced.
 - After restart, the room returns to exactly the same state as a freshly started lobby with the original participants — no score history is preserved across rounds.
-- Only the host can trigger a restart; this is enforced on the frontend only (checking `hostId === participantId`). No backend auth check is required for this scenario.
+- Only the host can trigger a restart; this is enforced on both frontend (button hidden for non-hosts) and backend (restart endpoint rejects non-host `participantId` with 403).
 - Players who are already on the GamePage when the game ends will transition to the results view via the existing polling mechanism — no push notification needed.

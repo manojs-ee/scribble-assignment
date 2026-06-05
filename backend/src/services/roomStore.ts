@@ -181,9 +181,10 @@ export function submitGuess(
   return { guess, score: room.scores[participantId] ?? 0 };
 }
 
-export function restartGame(code: string): { error: "not_found" } | { ok: true } {
+export function restartGame(code: string, requesterId: string): { error: "not_found" | "not_host" } | { ok: true } {
   const room = rooms.get(code);
   if (!room) return { error: "not_found" };
+  if (room.hostId !== requesterId) return { error: "not_host" };
   if (room.status === "lobby") return { ok: true };
 
   room.status = "lobby";
